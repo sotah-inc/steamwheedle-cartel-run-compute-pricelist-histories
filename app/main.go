@@ -14,6 +14,7 @@ import (
 	"github.com/sotah-inc/steamwheedle-cartel/pkg/act"
 	"github.com/sotah-inc/steamwheedle-cartel/pkg/logging"
 	"github.com/sotah-inc/steamwheedle-cartel/pkg/logging/stackdriver"
+	"github.com/sotah-inc/steamwheedle-cartel/pkg/sotah"
 	"github.com/sotah-inc/steamwheedle-cartel/pkg/sotah/codes"
 	"github.com/sotah-inc/steamwheedle-cartel/pkg/state/run"
 )
@@ -21,7 +22,7 @@ import (
 var port int
 var serviceName string
 var projectId string
-var state run.ComputeLiveAuctionsState
+var state run.ComputePricelistHistoriesState
 
 func init() {
 	var err error
@@ -76,9 +77,11 @@ func init() {
 		"project":      projectId,
 		"service-name": serviceName,
 		"port":         port,
-	}).Info("Producing gateway state")
+	}).Info("Producing compute-pricelist-histories state")
 
-	state, err = run.NewComputeLiveAuctionsState(run.ComputeLiveAuctionsStateConfig{ProjectId: projectId})
+	state, err = run.NewComputePricelistHistoriesState(
+		run.ComputePricelistHistoriesStateConfig{ProjectId: projectId},
+	)
 	if err != nil {
 		log.Fatalf("Failed to generate compute-live-auctions state: %s", err.Error())
 
@@ -91,7 +94,7 @@ func init() {
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/wew-lad", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		logging.Info("Received request")
 
 		body, err := ioutil.ReadAll(r.Body)
@@ -105,7 +108,18 @@ func main() {
 			return
 		}
 
-		msg := state.Run(body)
+		tuple, err := sotah.NewRegionRealmTimestampTuple(string(body))
+		if err != nil {
+			act.WriteErroneousErrorResponse(w, "Could not parse request body", err)
+
+			logging.WithFields(logrus.Fields{
+				"error": err.Error(),
+			}).Error("Could not parse request body")
+
+			return
+		}
+
+		msg := state.Run(tuple)
 		switch msg.Code {
 		case codes.Ok:
 			w.WriteHeader(http.StatusCreated)
