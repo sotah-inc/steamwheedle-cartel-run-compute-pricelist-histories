@@ -40,7 +40,8 @@ steps:
       '--platform', 'managed',
       '--no-allow-unauthenticated',
       '--timeout', '120s',
-      '--concurrency', '200'
+      '--concurrency', '20',
+      '--memory', '512Mi'
     ]
 images: [
   'gcr.io/$PROJECT_ID/steamwheedle-cartel/run-compute-pricelist-histories/build:latest',
