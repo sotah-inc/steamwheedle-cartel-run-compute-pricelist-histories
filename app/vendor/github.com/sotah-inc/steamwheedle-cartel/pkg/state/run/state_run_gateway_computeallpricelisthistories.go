@@ -41,7 +41,10 @@ func (sta GatewayState) ComputePricelistHistoriesFromTuples(
 	tuples sotah.RegionRealmTimestampTuples,
 ) (sotah.RegionRealmSummaryTuples, error) {
 	// generating new act client
-	logging.WithField("endpoint-url", sta.actEndpoints.ComputePricelistHistories).Info("Producing act client")
+	logging.WithField(
+		"endpoint-url",
+		sta.actEndpoints.ComputePricelistHistories,
+	).Info("Producing act client for compute-pricelist-histories act endpoint")
 	actClient, err := act.NewClient(sta.actEndpoints.ComputePricelistHistories)
 	if err != nil {
 		return sotah.RegionRealmSummaryTuples{}, err
@@ -123,12 +126,6 @@ func (sta GatewayState) ComputeAllPricelistHistories(tuples sotah.RegionRealmTim
 	// publishing to receive-realms
 	logging.Info("Publishing region-realm tuples to receiver")
 	if err := sta.PublishComputedPricelistHistories(nextTuples.RegionRealmTuples()); err != nil {
-		return err
-	}
-
-	// publishing to sync-items
-	logging.Info("Publishing item-ids to call-sync-all-items")
-	if err := sta.PublishToCallSyncAllItems(nextTuples.ItemIds()); err != nil {
 		return err
 	}
 
